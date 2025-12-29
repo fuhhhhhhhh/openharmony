@@ -114,9 +114,14 @@ export class DBManager {
    */
   public async closeDB(): Promise<void> {
     if (this.rdbStore) {
-      await this.rdbStore.close();
-      this.rdbStore = null;
-      console.log('数据库连接已关闭');
+      try {
+        await this.rdbStore.close();
+        this.rdbStore = null;
+        console.log('数据库连接已关闭');
+      } catch (error) {
+        console.error('关闭数据库连接失败');
+        throw new Error('关闭数据库连接失败');
+      }
     }
   }
 

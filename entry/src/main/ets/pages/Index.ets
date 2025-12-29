@@ -6,6 +6,7 @@ import { DatabaseTest } from '../data/DatabaseTest';
 struct Index {
   @State message: string = '记账本 App';
   @State statusMessage: string = '点击按钮测试数据库功能';
+  @State transactionIdToDelete: string = '';
 
   build() {
     Column() {
@@ -117,11 +118,129 @@ struct Index {
         .margin({ bottom: 10 })
         .onClick(async () => {
           try {
-            await DatabaseHelper.close();
-            await DatabaseHelper.initialize();
+            await DatabaseHelper.clearDatabase();
             this.statusMessage = '✅ 数据库已清理并重新初始化';
           } catch (error) {
             this.statusMessage = `❌ 清理失败: ${(error as Error).message}`;
+          }
+        })
+
+      Button('删除支出交易')
+        .width(200)
+        .height(40)
+        .margin({ bottom: 10 })
+        .onClick(async () => {
+          try {
+            const deletedCount = await DatabaseHelper.deleteTransactionsByType(0);
+            this.statusMessage = `✅ 已删除 ${deletedCount} 笔支出交易`;
+          } catch (error) {
+            this.statusMessage = `❌ 删除失败: ${(error as Error).message}`;
+          }
+        })
+
+      Button('删除收入交易')
+        .width(200)
+        .height(40)
+        .margin({ bottom: 10 })
+        .onClick(async () => {
+          try {
+            const deletedCount = await DatabaseHelper.deleteTransactionsByType(1);
+            this.statusMessage = `✅ 已删除 ${deletedCount} 笔收入交易`;
+          } catch (error) {
+            this.statusMessage = `❌ 删除失败: ${(error as Error).message}`;
+          }
+        })
+
+      Button('删除小额交易(<10)')
+        .width(200)
+        .height(40)
+        .margin({ bottom: 10 })
+        .onClick(async () => {
+          try {
+            const deletedCount = await DatabaseHelper.deleteTransactionsByAmountRange(0, 10);
+            this.statusMessage = `✅ 已删除 ${deletedCount} 笔小额交易`;
+          } catch (error) {
+            this.statusMessage = `❌ 删除失败: ${(error as Error).message}`;
+          }
+        })
+
+      Button('删除本月交易')
+        .width(200)
+        .height(40)
+        .margin({ bottom: 10 })
+        .onClick(async () => {
+          try {
+            const now = new Date();
+            const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
+            const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59).getTime();
+
+            const deletedCount = await DatabaseHelper.deleteTransactionsByDateRange(startOfMonth, endOfMonth);
+            this.statusMessage = `✅ 已删除 ${deletedCount} 笔本月交易`;
+          } catch (error) {
+            this.statusMessage = `❌ 删除失败: ${(error as Error).message}`;
+          }
+        })
+
+      Button('删除支出分类')
+        .width(200)
+        .height(40)
+        .margin({ bottom: 10 })
+        .onClick(async () => {
+          try {
+            const deletedCount = await DatabaseHelper.deleteCategoriesByType(0);
+            this.statusMessage = `✅ 已删除 ${deletedCount} 个支出分类`;
+          } catch (error) {
+            this.statusMessage = `❌ 删除失败: ${(error as Error).message}`;
+          }
+        })
+
+      Button('删除收入分类')
+        .width(200)
+        .height(40)
+        .margin({ bottom: 10 })
+        .onClick(async () => {
+          try {
+            const deletedCount = await DatabaseHelper.deleteCategoriesByType(1);
+            this.statusMessage = `✅ 已删除 ${deletedCount} 个收入分类`;
+          } catch (error) {
+            this.statusMessage = `❌ 删除失败: ${(error as Error).message}`;
+          }
+        })
+
+      Text('删除单个交易记录')
+        .fontSize(16)
+        .fontWeight(FontWeight.Bold)
+        .margin({ top: 20, bottom: 10 })
+
+      TextInput({ placeholder: '输入交易记录ID' })
+        .width(200)
+        .height(40)
+        .margin({ bottom: 10 })
+        .onChange((value: string) => {
+          this.transactionIdToDelete = value;
+        })
+
+      Button('删除指定交易')
+        .width(200)
+        .height(40)
+        .margin({ bottom: 10 })
+        .onClick(async () => {
+          try {
+            const transactionId = parseInt(this.transactionIdToDelete.trim());
+            if (isNaN(transactionId) || transactionId <= 0) {
+              this.statusMessage = '❌ 请输入有效的交易记录ID';
+              return;
+            }
+
+            const success = await DatabaseHelper.deleteTransaction(transactionId);
+            if (success) {
+              this.statusMessage = `✅ 已删除交易记录 ID: ${transactionId}`;
+              this.transactionIdToDelete = '';
+            } else {
+              this.statusMessage = `❌ 删除失败: 交易记录 ID ${transactionId} 不存在`;
+            }
+          } catch (error) {
+            this.statusMessage = `❌ 删除失败: ${(error as Error).message}`;
           }
         })
     }

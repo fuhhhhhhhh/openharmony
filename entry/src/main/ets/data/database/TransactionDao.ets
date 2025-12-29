@@ -110,6 +110,90 @@ export class TransactionDao {
   }
 
   /**
+   * 删除某个分类下的所有交易记录
+   * @param categoryId 分类ID
+   * @returns 删除的记录数量
+   */
+  public async deleteTransactionsByCategory(categoryId: number): Promise<number> {
+    try {
+      const predicates: relationalStore.RdbPredicates = new relationalStore.RdbPredicates(DBManager.TABLE_TRANSACTIONS);
+      predicates.equalTo('category_id', categoryId);
+
+      const result: number = await this.rdbStore.delete(predicates);
+      console.log(`删除分类 ${categoryId} 下的交易记录成功，影响行数: ${result}`);
+      return result;
+    } catch (error) {
+      console.error('删除分类交易记录失败');
+      throw new Error('删除分类交易记录失败');
+    }
+  }
+
+  /**
+   * 删除某个时间范围内的交易记录
+   * @param startTime 开始时间戳
+   * @param endTime 结束时间戳
+   * @returns 删除的记录数量
+   */
+  public async deleteTransactionsByDateRange(startTime: number, endTime: number): Promise<number> {
+    try {
+      const predicates: relationalStore.RdbPredicates = new relationalStore.RdbPredicates(DBManager.TABLE_TRANSACTIONS);
+      predicates.between('date', startTime, endTime);
+
+      const result: number = await this.rdbStore.delete(predicates);
+      console.log(`删除时间范围 ${startTime} - ${endTime} 内的交易记录成功，影响行数: ${result}`);
+      return result;
+    } catch (error) {
+      console.error('删除时间范围交易记录失败');
+      throw new Error('删除时间范围交易记录失败');
+    }
+  }
+
+  /**
+   * 删除某个金额范围内的交易记录
+   * @param minAmount 最小金额
+   * @param maxAmount 最大金额
+   * @param transactionType 交易类型 (0=支出, 1=收入, null=全部)
+   * @returns 删除的记录数量
+   */
+  public async deleteTransactionsByAmountRange(minAmount: number, maxAmount: number, transactionType?: number): Promise<number> {
+    try {
+      const predicates: relationalStore.RdbPredicates = new relationalStore.RdbPredicates(DBManager.TABLE_TRANSACTIONS);
+      predicates.between('amount', minAmount, maxAmount);
+
+      if (transactionType !== undefined) {
+        predicates.equalTo('type', transactionType);
+      }
+
+      const result: number = await this.rdbStore.delete(predicates);
+      console.log(`删除金额范围 ${minAmount} - ${maxAmount} 内的交易记录成功，影响行数: ${result}`);
+      return result;
+    } catch (error) {
+      console.error('删除金额范围交易记录失败');
+      throw new Error('删除金额范围交易记录失败');
+    }
+  }
+
+  /**
+   * 删除指定类型的交易记录
+   * @param transactionType 交易类型 (0=支出, 1=收入)
+   * @returns 删除的记录数量
+   */
+  public async deleteTransactionsByType(transactionType: number): Promise<number> {
+    try {
+      const predicates: relationalStore.RdbPredicates = new relationalStore.RdbPredicates(DBManager.TABLE_TRANSACTIONS);
+      predicates.equalTo('type', transactionType);
+
+      const result: number = await this.rdbStore.delete(predicates);
+      const typeName = transactionType === 0 ? '支出' : '收入';
+      console.log(`删除所有 ${typeName} 交易记录成功，影响行数: ${result}`);
+      return result;
+    } catch (error) {
+      console.error('删除类型交易记录失败');
+      throw new Error('删除类型交易记录失败');
+    }
+  }
+
+  /**
    * 查询交易记录列表 - 基础查询
    * @param options 查询选项
    * @returns 交易记录列表

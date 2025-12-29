@@ -72,6 +72,43 @@ export class CategoryDao {
   }
 
   /**
+   * 删除指定类型的分类
+   * 删除前需判断分类是否被交易记录引用
+   * @param categoryType 分类类型 (0=支出分类, 1=收入分类)
+   * @returns 删除的分类数量
+   */
+  public async deleteCategoriesByType(categoryType: number): Promise<number> {
+    try {
+      // 获取指定类型的分类列表
+      const categories = await this.getCategoriesByType(categoryType);
+      let deletedCount = 0;
+
+      for (const category of categories) {
+        // 检查每个分类是否被交易记录引用
+        const hasTransactions = await this.hasTransactionsUsingCategory(category.id!);
+        if (!hasTransactions) {
+          const predicates: relationalStore.RdbPredicates = new relationalStore.RdbPredicates(DBManager.TABLE_CATEGORIES);
+          predicates.equalTo('id', category.id!);
+
+          const result = await this.rdbStore.delete(predicates);
+          if (result > 0) {
+            deletedCount++;
+          }
+        } else {
+          console.warn(`分类 "${category.name}" (ID: ${category.id}) 已被交易记录使用，跳过删除`);
+        }
+      }
+
+      const typeName = categoryType === 0 ? '支出' : '收入';
+      console.log(`删除 ${typeName} 分类成功，共删除 ${deletedCount} 个分类`);
+      return deletedCount;
+    } catch (error) {
+      console.error('删除类型分类失败');
+      throw new Error('删除类型分类失败');
+    }
+  }
+
+  /**
    * 检查分类是否被交易记录使用
    * @param categoryId 分类ID
    * @returns 是否被使用
